@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa Igreja Simples</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red: #c0000d;
+  --red-light: #fff5f5;
+  --black: #111111;
+  --gray-dark: #3d3d3d;
+  --gray: #888888;
+  --gray-light: #e0e0e0;
+  --gray-bg: #f7f7f7;
+  --white: #ffffff;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--white);
+  color: var(--black);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── STICKY PROGRESS ── */
+.progress-sticky {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-light);
+  padding: 11px 24px;
+}
+.progress-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.progress-brand {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--black);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.progress-track {
+  flex: 1;
+  height: 2px;
+  background: var(--gray-light);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 99px;
+  transition: width 0.5s ease;
+  width: 0%;
+}
+.progress-pct {
+  font-size: 11px;
+  color: var(--gray);
+  white-space: nowrap;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── PAGE ── */
+.page { display: none; padding-top: 56px; }
+.page.active { display: block; }
+
+.inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 52px 24px 88px;
+}
+
+/* ── INTRO ── */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+.page-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--black);
+  margin-bottom: 28px;
+}
+.rule {
+  width: 32px;
+  height: 2px;
+  background: var(--red);
+  margin-bottom: 28px;
+}
+.body-text {
+  font-size: 15px;
+  color: var(--gray-dark);
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.body-text strong { color: var(--black); font-weight: 600; }
+
+.scale-table {
+  margin: 32px 0;
+  border: 1px solid var(--gray-light);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--gray-light);
+  font-size: 14px;
+}
+.scale-row:last-child { border-bottom: none; }
+.scale-num {
+  font-weight: 700;
+  color: var(--red);
+  width: 18px;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+.scale-lbl { color: var(--gray-dark); }
+
+/* ── SECTION HEADER ── */
+.sec-header {
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--gray-light);
+}
+.sec-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--black);
+  margin-bottom: 8px;
+}
+.sec-def {
+  font-size: 14px;
+  color: var(--gray);
+  line-height: 1.65;
+}
+
+/* ── QUESTION ── */
+.question {
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--gray-light);
+}
+.question:last-of-type { border-bottom: none; margin-bottom: 0; }
+
+.q-num {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 8px;
+}
+.q-text {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--black);
+  margin-bottom: 18px;
+}
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.option input[type="radio"] { display: none; }
+.option label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  min-width: 84px;
+  border: 1px solid var(--gray-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--gray);
+  line-height: 1.3;
+  text-align: center;
+  transition: all 0.15s;
+  background: var(--white);
+  user-select: none;
+}
+.option label:hover { border-color: var(--black); color: var(--black); }
+.option input:checked + label {
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--white);
+  font-weight: 600;
+}
+.opt-num { font-size: 17px; font-weight: 700; line-height: 1; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 3px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+}
+.btn-black { background: var(--black); color: var(--white); }
+.btn-black:hover:not(:disabled) { background: #333; }
+.btn-black:disabled { background: var(--gray-light); color: var(--gray); cursor: not-allowed; }
+.btn-outline { background: transparent; color: var(--black); border: 1.5px solid var(--black); }
+.btn-outline:hover { background: var(--black); color: var(--white); }
+.btn-red { background: var(--red); color: var(--white); }
+.btn-red:hover { background: #a0000b; }
+
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--gray-light);
+}
+.btn-hint { font-size: 13px; color: var(--gray); }
+
+/* ── RESULT ── */
+.score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border: 1px solid var(--gray-light);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.score-cell {
+  padding: 24px 12px;
+  text-align: center;
+  border-right: 1px solid var(--gray-light);
+}
+.score-cell:last-child { border-right: none; }
+.score-cell.mine { background: var(--black); }
+.score-big {
+  font-family: 'DM Serif Display', serif;
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: var(--black);
+}
+.score-cell.mine .score-big { color: var(--white); }
+.score-big.green { color: #2a6b3c; }
+.score-big.amber { color: #b07010; }
+.score-small { font-size: 12px; color: var(--gray); line-height: 1.4; }
+.score-cell.mine .score-small { color: rgba(255,255,255,0.55); }
+
+.class-note {
+  background: var(--gray-bg);
+  border-left: 3px solid var(--red);
+  padding: 16px 20px;
+  border-radius: 0 4px 4px 0;
+  font-size: 14px;
+  color: var(--gray-dark);
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+.class-note strong { color: var(--black); }
+
+.dim-block {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--gray-light);
+}
+.dim-block:last-of-type { border-bottom: none; }
+.dim-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.dim-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--black);
+}
+.dim-score { font-family: 'DM Serif Display', serif; font-size: 34px; color: var(--red); line-height: 1; }
+.dim-def { font-size: 13px; color: var(--gray); line-height: 1.65; margin-bottom: 20px; }
+
+.bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.bar-lbl { font-size: 12px; color: var(--gray); width: 88px; flex-shrink: 0; text-align: right; }
+.bar-track { flex: 1; height: 5px; background: var(--gray-light); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; width: 0; transition: width 1s cubic-bezier(.2,.8,.3,1); }
+.bar-you { background: var(--red); }
+.bar-simples { background: var(--black); }
+.bar-comp { background: var(--gray-light); outline: 1px solid var(--gray); }
+.bar-num { font-size: 12px; font-weight: 600; color: var(--gray-dark); width: 20px; }
+
+.dim-tips {
+  margin-top: 18px;
+  background: var(--gray-bg);
+  border-radius: 4px;
+  padding: 18px 20px;
+}
+.tips-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gray); margin-bottom: 12px;
+}
+.dim-tips ul { list-style: none; }
+.dim-tips li {
+  font-size: 13px; color: var(--gray-dark);
+  padding: 7px 0 7px 18px; position: relative;
+  border-bottom: 1px solid var(--gray-light); line-height: 1.55;
+}
+.dim-tips li:last-child { border-bottom: none; }
+.dim-tips li::before { content: '—'; position: absolute; left: 0; color: var(--red); font-weight: 700; }
+
+/* ── ENVISIONAR CTA ── */
+.cta-block {
+  border: 1px solid var(--gray-light);
+  border-radius: 6px;
+  padding: 32px 28px;
+  margin: 40px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.cta-block::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--red);
+}
+.cta-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--red); margin-bottom: 10px;
+}
+.cta-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; color: var(--black); margin-bottom: 14px; line-height: 1.3;
+}
+.cta-text {
+  font-size: 14px; color: var(--gray-dark); line-height: 1.75; margin-bottom: 22px;
+}
+.cta-text strong { color: var(--black); }
+
+/* ── RESULT ACTIONS ── */
+.result-actions {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 36px; padding-top: 28px;
+  border-top: 1px solid var(--gray-light);
+}
+
+/* ── FADE ── */
+.fade { opacity: 0; transform: translateY(12px); animation: fu .4s ease forwards; }
+.d1 { animation-delay: .05s; }
+.d2 { animation-delay: .12s; }
+.d3 { animation-delay: .18s; }
+@keyframes fu { to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- STICKY PROGRESS -->
+<div class="progress-sticky">
+  <div class="progress-inner">
+    <div class="progress-brand">Igreja Simples</div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="progress-pct" id="prog-pct">0%</div>
+  </div>
+</div>
+
+<!-- PAGE 0: INTRO -->
+<div class="page active" id="page-0">
+  <div class="inner">
+    <div class="eyebrow fade">Diagnóstico</div>
+    <h1 class="page-title fade d1">Pesquisa<br><em>Igreja Simples</em></h1>
+    <div class="rule fade d2"></div>
+    <p class="body-text fade d2">Esta pesquisa avalia os <strong>processos de funcionamento</strong> em sua igreja. Enquanto o propósito da sua igreja foca no <em>"o quê"</em>, os processos focam no <em>"como"</em> — como a igreja estrutura o caminho de desenvolvimento e maturidade espiritual dos seus membros.</p>
+    <p class="body-text fade d2">Responda as afirmações <strong>não como você gostaria</strong> que as coisas fossem, mas <strong>como elas realmente são hoje</strong>. Sua honestidade garante um diagnóstico preciso.</p>
+
+    <div class="scale-table fade d3">
+      <div class="scale-row"><div class="scale-num">1</div><div class="scale-lbl">Discordo totalmente</div></div>
+      <div class="scale-row"><div class="scale-num">2</div><div class="scale-lbl">Discordo</div></div>
+      <div class="scale-row"><div class="scale-num">3</div><div class="scale-lbl">Discordo em parte</div></div>
+      <div class="scale-row"><div class="scale-num">4</div><div class="scale-lbl">Concordo em parte</div></div>
+      <div class="scale-row"><div class="scale-num">5</div><div class="scale-lbl">Concordo</div></div>
+      <div class="scale-row"><div class="scale-num">6</div><div class="scale-lbl">Concordo totalmente</div></div>
+    </div>
+
+    <div class="btn-row" style="border-top:none;margin-top:0;padding-top:0;">
+      <button class="btn btn-black fade d3" onclick="goTo(1)">Iniciar pesquisa →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION PAGES (built by JS) -->
+<div id="sections-wrap"></div>
+
+<!-- RESULT PAGE -->
+<div class="page" id="page-result">
+  <div class="inner">
+    <div id="pdf-area">
+      <div class="eyebrow">Diagnóstico</div>
+      <h1 class="page-title">Resultado da<br><em>Pesquisa Igreja Simples</em></h1>
+      <div class="rule"></div>
+      <div id="result-content"></div>
+    </div>
+    <div class="result-actions" id="result-actions">
+      <button class="btn btn-black" onclick="downloadPDF()">↓ Baixar em PDF</button>
+      <button class="btn btn-outline" onclick="location.reload()">↺ Refazer pesquisa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LABELS = ['Discordo totalmente','Discordo','Discordo em parte','Concordo em parte','Concordo','Concordo totalmente'];
+
+const SECTIONS = [
+  {
+    key:'clareza', label:'Clareza', eyebrow:'Dimensão 1 de 4',
+    def:'A habilidade com que sua igreja comunica sobre os processos de funcionamento e isto é entendido pelas pessoas.',
+    simples:20, comp:15, max:30,
+    tips:['Defina claramente como sua igreja faz discípulos — esta deve ser a linha central do processo.','Ilustre o processo através de um desenho para que todos possam compreendê-lo.','Meça o número de pessoas que se desenvolveram através do processo.','Discuta o processo de discipulado constantemente com as equipes de liderança.'],
+    questions:[
+      {id:1, text:'Os passos para levar uma pessoa desde sua conversão até o seu envolvimento com um ministério são claramente definidos em nossa igreja.'},
+      {id:2, text:'Nós temos um sistema para medir como as pessoas progridem no seu envolvimento com a igreja.'},
+      {id:3, text:'Temos um desenho ilustrativo do nosso processo de desenvolvimento na igreja.'},
+      {id:4, text:'Nós frequentemente discutimos o nosso processo de crescimento dos membros com um grupo de liderança.'},
+      {id:5, text:'Os membros da nossa igreja compreendem claramente nosso processo de desenvolvimento dos membros.'},
+    ]
+  },
+  {
+    key:'movimento', label:'Movimento', eyebrow:'Dimensão 2 de 4',
+    def:'O passo sequencial no processo de desenvolvimento dos membros, que leva as pessoas a se moverem para áreas de maior compromisso.',
+    simples:22, comp:16, max:30,
+    tips:['Estabeleça seus programas estrategicamente alinhados ao processo de desenvolvimento.','Organize os programas em ordem sequencial, baseados no processo de desenvolvimento.','De forma intencional, conduza as pessoas num crescente de um programa para outro.','Crie grupos para novos membros com próximos passos claros para os novos crentes.'],
+    questions:[
+      {id:7,  text:'Definimos nossos programas com base em nosso processo estratégico de desenvolvimento dos membros.'},
+      {id:9,  text:'Nossos programas são baseados em nosso processo de desenvolvimento dos membros, de uma forma sequencial.'},
+      {id:12, text:'Somos intencionais em conduzir uma pessoa de um programa para outro dentro do processo de desenvolvimento dos membros.'},
+      {id:15, text:'Nosso processo de desenvolvimento dos membros é fácil de comunicar.'},
+      {id:20, text:'Nós temos uma classe ou grupo que conduz um visitante ou interessado para dentro da vida da igreja.'},
+    ]
+  },
+  {
+    key:'alinhamento', label:'Alinhamento', eyebrow:'Dimensão 3 de 4',
+    def:'A organização de todos os ministérios da igreja e da equipe em torno de um mesmo processo simples de funcionamento.',
+    simples:22, comp:16, max:30,
+    tips:['Recrute e contrate pessoas comprometidas com o processo simples de desenvolvimento.','Ofereça ajuda e peça prestação de contas dos líderes na implementação do processo.','Implemente o mesmo processo de funcionamento em cada ministério.','Assegure-se de que os novos ministérios se encaixem no processo simples.'],
+    questions:[
+      {id:6,  text:'Antes de começar um novo ministério ou grupo, verificamos se ele se encaixa em nosso processo de desenvolvimento dos membros.'},
+      {id:11, text:'Nosso processo de desenvolvimento dos membros é o que nos une e mantém todos os nossos líderes focados.'},
+      {id:13, text:'Colocamos pessoas em nossa equipe que são comprometidas com nosso processo de desenvolvimento dos membros.'},
+      {id:16, text:'Mesmo que os nomes e estilos dos nossos ministérios sejam diferentes, o processo de desenvolvimento dos membros é o mesmo.'},
+      {id:19, text:'Nossa equipe é responsável por como o processo de desenvolvimento dos membros é implementado em sua área.'},
+    ]
+  },
+  {
+    key:'foco', label:'Foco', eyebrow:'Dimensão 4 de 4',
+    def:'O comprometimento em abandonar qualquer coisa que esteja fora do processo de funcionamento de um ministério simples.',
+    simples:22, comp:18, max:30,
+    tips:['Elimine programas que estejam fora do processo de funcionamento simples.','Não acrescente programas ao processo de funcionamento simples da igreja.','Limite seus eventos especiais a poucas atividades no ano.','Assegure-se de que o processo da igreja é fácil de comunicar e de compreender.'],
+    questions:[
+      {id:8,  text:'Nós criamos um processo simples de desenvolvimento dos membros para que as pessoas compreendam.'},
+      {id:10, text:'Nós procuramos eliminar os programas que não estão em nosso processo de desenvolvimento dos membros, mesmo que eles sejam bons.'},
+      {id:14, text:'Quando queremos uma ênfase nova na igreja, usamos os programas semanais que já temos, em vez de adicionar novos programas ao calendário.'},
+      {id:18, text:'Nós limitamos o número de conferências e eventos especiais que fazemos.'},
+      {id:17, text:'Depois que alguém se torna um novo crente, o próximo passo é claro.'},
+    ]
+  }
+];
+
+const answers = {};
+const TOTAL_Q = 20;
+
+function buildSections() {
+  const wrap = document.getElementById('sections-wrap');
+  SECTIONS.forEach((sec, si) => {
+    const pageNum = si + 1;
+    const div = document.createElement('div');
+    div.className = 'page';
+    div.id = `page-${pageNum}`;
+
+    let qHtml = '';
+    sec.questions.forEach((q, qi) => {
+      let opts = LABELS.map((lbl, idx) => {
+        const v = idx + 1;
+        return `<div class="option">
+          <input type="radio" name="q${q.id}" id="q${q.id}v${v}" value="${v}" onchange="onAnswer(${q.id},${v},${pageNum})">
+          <label for="q${q.id}v${v}"><span class="opt-num">${v}</span>${lbl}</label>
+        </div>`;
+      }).join('');
+      qHtml += `<div class="question">
+        <div class="q-num">Afirmação ${qi+1}</div>
+        <div class="q-text">${q.text}</div>
+        <div class="options">${opts}</div>
+      </div>`;
+    });
+
+    const isLast = si === SECTIONS.length - 1;
+    const nextLabel = isLast ? 'Ver diagnóstico →' : `Próxima: ${SECTIONS[si+1].label} →`;
+    const nextAction = isLast ? 'showResults()' : `goTo(${pageNum+1})`;
+
+    div.innerHTML = `<div class="inner">
+      <div class="sec-header">
+        <div class="eyebrow">${sec.eyebrow}</div>
+        <div class="sec-title">${sec.label}</div>
+        <div class="sec-def">${sec.def}</div>
+      </div>
+      ${qHtml}
+      <div class="btn-row">
+        <button class="btn btn-black" id="btn-${pageNum}" disabled onclick="${nextAction}">${nextLabel}</button>
+        <span class="btn-hint" id="hint-${pageNum}">Responda todas as 5 afirmações para continuar</span>
+      </div>
+    </div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function onAnswer(qid, val, pageNum) {
+  answers[qid] = val;
+  updateProgress();
+  checkSection(pageNum);
+}
+
+function checkSection(pageNum) {
+  const sec = SECTIONS[pageNum - 1];
+  const done = sec.questions.filter(q => answers[q.id] !== undefined).length;
+  const btn = document.getElementById(`btn-${pageNum}`);
+  const hint = document.getElementById(`hint-${pageNum}`);
+  if (done === sec.questions.length) {
+    btn.disabled = false;
+    hint.textContent = '';
+  } else {
+    btn.disabled = true;
+    hint.textContent = `Responda mais ${sec.questions.length - done} afirmação(ões) para continuar`;
+  }
+}
+
+function updateProgress() {
+  const done = Object.keys(answers).length;
+  const pct = Math.round((done / TOTAL_Q) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+}
+
+function goTo(pageNum) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(`page-${pageNum}`);
+  if (target) { target.classList.add('active'); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showResults() {
+  const scores = {};
+  let total = 0;
+  SECTIONS.forEach(sec => {
+    const s = sec.questions.reduce((a, q) => a + (answers[q.id] || 0), 0);
+    scores[sec.key] = s;
+    total += s;
+  });
+
+  const totalMax = 120, totalSimples = 86, totalComp = 62;
+
+  let classMsg;
+  if (total >= 80)
+    classMsg = `Com <strong>${total} pontos</strong>, sua igreja está próxima ou acima do nível das igrejas vibrantes do estudo. Isso reflete um processo de discipulado saudável. Continue fortalecendo as dimensões indicadas abaixo.`;
+  else if (total >= 62)
+    classMsg = `Com <strong>${total} pontos</strong>, sua igreja está acima da média das igrejas de comparação, mas abaixo do nível das igrejas simples. As sugestões abaixo indicam onde focar energia para avançar.`;
+  else
+    classMsg = `Com <strong>${total} pontos</strong>, há oportunidades significativas de crescimento. As sugestões em cada dimensão mostram caminhos concretos e práticos para avançar rumo a uma igreja mais vibrante.`;
+
+  let dimsHtml = SECTIONS.map(sec => {
+    const s = scores[sec.key];
+    const yPct = (s / sec.max) * 100;
+    const sPct = (sec.simples / sec.max) * 100;
+    const cPct = (sec.comp / sec.max) * 100;
+    const tips = sec.tips.map(t => `<li>${t}</li>`).join('');
+    return `<div class="dim-block">
+      <div class="dim-top">
+        <div>
+          <div class="dim-name">${sec.label}</div>
+          <div class="dim-def">${sec.def}</div>
+        </div>
+        <div class="dim-score">${s}</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-lbl">Sua Igreja</div>
+        <div class="bar-track"><div class="bar-fill bar-you" data-w="${yPct}"></div></div>
+        <div class="bar-num">${s}</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-lbl">Igreja Simples</div>
+        <div class="bar-track"><div class="bar-fill bar-simples" data-w="${sPct}"></div></div>
+        <div class="bar-num">${sec.simples}</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-lbl">Comparação</div>
+        <div class="bar-track"><div class="bar-fill bar-comp" data-w="${cPct}"></div></div>
+        <div class="bar-num">${sec.comp}</div>
+      </div>
+      <div class="dim-tips">
+        <div class="tips-label">Para melhorar ${sec.label}</div>
+        <ul>${tips}</ul>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('result-content').innerHTML = `
+    <div class="score-grid">
+      <div class="score-cell">
+        <div class="score-big green">${totalSimples}</div>
+        <div class="score-small">Média<br>Igreja Simples</div>
+      </div>
+      <div class="score-cell mine">
+        <div class="score-big">${total}</div>
+        <div class="score-small">Sua Igreja<br><span style="font-size:11px;opacity:.45">de ${totalMax} possíveis</span></div>
+      </div>
+      <div class="score-cell">
+        <div class="score-big amber">${totalComp}</div>
+        <div class="score-small">Média<br>Comparação</div>
+      </div>
+    </div>
+
+    <div class="class-note">${classMsg}</div>
+
+    ${dimsHtml}
+
+    <div class="cta-block">
+      <div class="cta-eyebrow">Envisionar</div>
+      <div class="cta-title">Jornada Igreja Simples</div>
+      <div class="cta-text">
+        A <strong>Envisionar</strong> acompanha igrejas que desejam se tornar vibrantes e saudáveis. A <strong>Jornada Igreja Simples</strong> é um processo prático de consultoria que ajuda líderes a redesenhar o processo de discipulado da sua igreja — com clareza, movimento, alinhamento e foco.<br><br>
+        Se os resultados desta pesquisa revelaram áreas que precisam de atenção, a Envisionar pode caminhar junto com sua liderança nesse processo de transformação.
+      </div>
+      <a href="https://www.envisionar.com.br" target="_blank" class="btn btn-red">Conhecer a Jornada →</a>
+    </div>
+  `;
+
+  goTo('result');
+
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(b => {
+      b.style.width = (b.dataset.w || 0) + '%';
+    });
+  }, 350);
+}
+
+function downloadPDF() {
+  const area = document.getElementById('pdf-area');
+  const actions = document.getElementById('result-actions');
+  actions.style.display = 'none';
+
+  html2pdf().set({
+    margin: [14, 14, 14, 14],
+    filename: 'diagnostico-igreja-simples.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(area).save().then(() => {
+    actions.style.display = 'flex';
+  });
+}
+
+buildSections();
+</script>
+</body>
+</html>
