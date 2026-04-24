@@ -998,12 +998,17 @@ function downloadPDF() {
 <title>Diagnóstico Igreja Simples</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#111; background:#fff; padding:32px 36px; }
+  html, body { width:100%; height:auto; }
+  body { font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#111; background:#fff; }
   h1 { font-family:Georgia,serif; font-size:26px; font-weight:normal; line-height:1.2; }
   em { font-style:italic; }
+  @page { margin: 12mm 14mm; size: A4 portrait; }
   @media print {
-    body { padding: 0; }
-    .no-break { page-break-inside: avoid; }
+    html, body { margin:0; padding:0; }
+    .no-break { page-break-inside: avoid; break-inside: avoid; }
+  }
+  @media screen {
+    body { padding: 32px 36px; max-width: 860px; margin: 0 auto; }
   }
 </style>
 </head>
@@ -1052,26 +1057,14 @@ function downloadPDF() {
 </body>
 </html>`;
 
-  // Create blob and trigger download via print dialog
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank');
-
-  if (win) {
-    win.addEventListener('load', () => {
-      setTimeout(() => {
-        win.focus();
-        win.print();
-      }, 800);
-    });
-  } else {
-    // Fallback: direct download of HTML if popup blocked
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'diagnostico-igreja-simples.html';
-    a.click();
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  // Open clean print window — user clicks Save as PDF
+  const printWin = window.open('', '_blank', 'width=900,height=700');
+  if (!printWin) return;
+  printWin.document.write(html);
+  printWin.document.close();
+  // Wait for content to fully render before printing
+  printWin.onload = () => setTimeout(() => { printWin.focus(); printWin.print(); }, 600);
+  setTimeout(() => URL.revokeObjectURL && null, 5000);
 }
 
 // ── CONFETTI ENGINE ──
