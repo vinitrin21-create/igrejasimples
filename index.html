@@ -921,45 +921,157 @@ function showResults() {
   }, 350);
 }
 
-// ── PDF: direct download via html2pdf ──
+// ── PDF: generate self-contained HTML → open → print to PDF ──
 function downloadPDF() {
-  const btn = document.querySelector('#result-actions .btn-black');
-  const originalText = btn.textContent;
-  btn.textContent = 'Gerando PDF…';
-  btn.disabled = true;
+  // Recalculate scores from answers
+  const scores = {};
+  let total = 0;
+  SECTIONS.forEach(sec => {
+    const s = sec.questions.reduce((a, q) => a + (answers[q.id] || 0), 0);
+    scores[sec.key] = s;
+    total += s;
+  });
 
-  // Hide elements that shouldn't appear in PDF
-  const noprint = document.querySelectorAll('.no-print, .result-actions, .tooltip-pop, canvas');
-  noprint.forEach(el => el.style.display = 'none');
+  const totalMax = 120, totalSimples = 86, totalComp = 62;
 
-  const el = document.getElementById('pdf-content');
+  let classMsg;
+  if (total >= 86) classMsg = `Com <b>${total} pontos</b>, sua igreja está no nível das igrejas vibrantes do estudo. Isso reflete um processo de discipulado saudável e intencional.`;
+  else if (total >= 62) classMsg = `Com <b>${total} pontos</b>, sua igreja está acima da média das igrejas complexas, mas ainda abaixo do nível das igrejas simples. As sugestões abaixo indicam onde focar para avançar.`;
+  else classMsg = `Com <b>${total} pontos</b>, há oportunidades significativas de crescimento. As sugestões em cada dimensão mostram caminhos concretos para avançar rumo a uma igreja mais vibrante.`;
 
-  html2pdf()
-    .set({
-      margin: [14, 14, 14, 14],
-      filename: 'diagnostico-igreja-simples.pdf',
-      image: { type: 'jpeg', quality: 0.97 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    })
-    .from(el)
-    .save()
-    .then(() => {
-      noprint.forEach(el => el.style.display = '');
-      btn.textContent = originalText;
-      btn.disabled = false;
-    })
-    .catch(() => {
-      noprint.forEach(el => el.style.display = '');
-      btn.textContent = originalText;
-      btn.disabled = false;
+  const dimRows = SECTIONS.map(sec => {
+    const s = scores[sec.key];
+    const yPct  = Math.round((s          / sec.max) * 100);
+    const sPct  = Math.round((sec.simples / sec.max) * 100);
+    const cPct  = Math.round((sec.comp   / sec.max) * 100);
+    const tips  = sec.tips.map(t =>
+      `<li style="padding:6px 0 6px 16px;position:relative;border-bottom:1px solid #e8e8e8;font-size:12px;color:#444;line-height:1.5;">
+        <span style="position:absolute;left:0;color:#c0000d;font-weight:700;">—</span>${t}
+       </li>`
+    ).join('');
+
+    const bar = (pct, color) =>
+      `<div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px;overflow:hidden;">
+         <div style="height:7px;background:${color};border-radius:99px;width:${pct}%;"></div>
+       </div>`;
+
+    const row = (label, pct, color, val) =>
+      `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+         <div style="width:108px;font-size:11px;color:#888;text-align:right;flex-shrink:0;">${label}</div>
+         ${bar(pct, color)}
+         <div style="width:22px;font-size:11px;font-weight:700;color:#333;flex-shrink:0;">${val}</div>
+       </div>`;
+
+    return `
+      <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #e0e0e0;page-break-inside:avoid;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+          <div style="font-family:Georgia,serif;font-size:17px;color:#111;font-weight:normal;">${sec.label}</div>
+          <div style="font-family:Georgia,serif;font-size:24px;color:#c0000d;line-height:1;">${s} <span style="font-size:12px;color:#aaa;">/ ${sec.max}</span></div>
+        </div>
+        <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.55;">${sec.def}</div>
+        ${row('Sua Igreja',       yPct, '#c0000d', s)}
+        ${row('Igreja Simples',   sPct, '#111111', sec.simples)}
+        ${row('Igreja Complexa',  cPct, '#bbbbbb', sec.comp)}
+        <div style="margin-top:14px;background:#f7f7f7;border-radius:4px;padding:14px 16px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:8px;">Para melhorar ${sec.label}</div>
+          <ul style="list-style:none;padding:0;margin:0;">${tips}</ul>
+        </div>
+      </div>`;
+  }).join('');
+
+  const scoreCell = (num, label, color, bg, textColor) =>
+    `<div style="flex:1;text-align:center;padding:20px 10px;background:${bg};">
+       <div style="font-family:Georgia,serif;font-size:38px;color:${color};line-height:1;margin-bottom:5px;">${num}</div>
+       <div style="font-size:11px;color:${textColor};line-height:1.4;">${label}</div>
+     </div>`;
+
+  const descRow = (dot, text) =>
+    `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+       <div style="width:10px;height:10px;border-radius:50%;background:${dot};flex-shrink:0;margin-top:3px;"></div>
+       <div style="font-size:12px;color:#444;line-height:1.55;">${text}</div>
+     </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Diagnóstico Igreja Simples</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#111; background:#fff; padding:32px 36px; }
+  h1 { font-family:Georgia,serif; font-size:26px; font-weight:normal; line-height:1.2; }
+  em { font-style:italic; }
+  @media print {
+    body { padding: 0; }
+    .no-break { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#c0000d;margin-bottom:10px;">Diagnóstico</div>
+  <h1>Resultado da<br><em>Pesquisa Igreja Simples</em></h1>
+  <div style="width:28px;height:2px;background:#c0000d;margin:14px 0 20px;"></div>
+
+  <!-- Score grid -->
+  <div style="display:flex;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;margin-bottom:16px;" class="no-break">
+    ${scoreCell(totalSimples, 'Média<br>Igreja Simples',   '#2a6b3c', '#fff',   '#888')}
+    <div style="width:1px;background:#e0e0e0;flex-shrink:0;"></div>
+    ${scoreCell(total,        'Sua Igreja<br><span style="font-size:10px;color:rgba(255,255,255,.5)">de '+totalMax+' possíveis</span>', '#fff', '#111', 'rgba(255,255,255,.6)')}
+    <div style="width:1px;background:#e0e0e0;flex-shrink:0;"></div>
+    ${scoreCell(totalComp,    'Média<br>Igrejas Complexas', '#b07010', '#fff',   '#888')}
+  </div>
+
+  <!-- Descriptions -->
+  <div style="margin-bottom:20px;" class="no-break">
+    ${descRow('#2a6b3c', `<b>Média Igreja Simples (${totalSimples})</b> — pontuação das igrejas vibrantes e saudáveis do estudo, com processo claro e intencional de fazer discípulos.`)}
+    ${descRow('#111111', `<b>Sua Igreja (${total})</b> — sua pontuação com base nas 20 afirmações respondidas. Quanto mais próxima de ${totalSimples}, mais vibrante é o processo da sua igreja.`)}
+    ${descRow('#bbbbbb', `<b>Média Igrejas Complexas (${totalComp})</b> — pontuação das igrejas com muitos programas, processos fragmentados e sem foco claro de discipulado.`)}
+  </div>
+
+  <!-- Classification -->
+  <div style="background:#f7f7f7;border-left:3px solid #c0000d;padding:14px 16px;border-radius:0 4px 4px 0;font-size:13px;color:#555;margin-bottom:28px;line-height:1.65;" class="no-break">
+    ${classMsg}
+  </div>
+
+  <!-- Dimensions -->
+  ${dimRows}
+
+  <!-- Envisionar CTA -->
+  <div style="background:#c0000d;border-radius:6px;padding:28px 24px;color:#fff;margin-top:28px;page-break-inside:avoid;" class="no-break">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:8px;">Envisionar</div>
+    <div style="font-family:Georgia,serif;font-size:18px;color:#fff;margin-bottom:12px;line-height:1.3;">Jornada Igreja Simples</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.88);line-height:1.7;">
+      A <b>Envisionar</b> acompanha igrejas que desejam se tornar vibrantes e saudáveis.
+      A <b>Jornada Igreja Simples</b> é um processo prático de mentoria que ajuda líderes a redesenhar
+      o processo de discipulado com clareza, movimento, alinhamento e foco.<br><br>
+      Acesse: <b>www.envisionar.com.br</b>
+    </div>
+  </div>
+
+</body>
+</html>`;
+
+  // Create blob and trigger download via print dialog
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+
+  if (win) {
+    win.addEventListener('load', () => {
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 800);
     });
+  } else {
+    // Fallback: direct download of HTML if popup blocked
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'diagnostico-igreja-simples.html';
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // ── CONFETTI ENGINE ──
